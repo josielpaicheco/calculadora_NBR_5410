@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora NBR 5410 - Dimensionamento Elétrico</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg: #f4f7f6;
+            --text: #333;
+            --border: #ccc;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        h1, h2, h3 { color: var(--primary); }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        @media (max-width: 800px) { .container { grid-template-columns: 1fr; } }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+        button { background-color: var(--primary); color: white; border: none; padding: 10px 15px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #004494; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: center; }
+        th { background-color: var(--primary); color: white; }
+        .summary-box { background: #e9ecef; padding: 15px; border-radius: 8px; margin-top: 20px; display: flex; justify-content: space-around; text-align: center;}
+        .summary-item strong { display: block; font-size: 1.2em; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <h1>⚡ Calculadora de Previsão de Cargas - NBR 5410 By Josiel Paicheco</h1>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Adicionar Cômodo</h2>
+            <div class="form-group">
+                <label>Nome do Cômodo (ex: Sala, Quarto)</label>
+                <input type="text" id="nomeComodo" placeholder="Nome do cômodo">
+            </div>
+            <div class="form-group">
+                <label>Tipo do Cômodo</label>
+                <select id="tipoComodo">
+                    <option value="seco">Seco (Sala, Quarto, Corredor)</option>
+                    <option value="umido">Úmido (Cozinha, Área de Serviço, Copa)</option>
+                    <option value="banheiro">Banheiro</option>
+                </select>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Largura (m)</label>
+                    <input type="number" id="largura" step="0.1" min="0">
+                </div>
+                <div style="flex: 1;">
+                    <label>Comprimento (m)</label>
+                    <input type="number" id="comprimento" step="0.1" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tensão (V)</label>
+                <select id="tensao">
+                    <option value="127">127V</option>
+                    <option value="220">220V</option>
+                </select>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
+            <h3>Equipamento Específico (TUE) - Opcional</h3>
+            <div class="form-group">
+                <label>Nome (ex: Chuveiro, Ar Condicionado)</label>
+                <input type="text" id="nomeTue" placeholder="Deixe em branco se não houver">
+            </div>
+            <div class="form-group">
+                <label>Potência da TUE (W)</label>
+                <input type="number" id="potenciaTue" step="100" min="0" placeholder="Ex: 5500">
+            </div>
+            <button onclick="adicionarComodo()">+ Adicionar ao Projeto</button>
+        </div>
+
+        <div class="card" style="overflow-x: auto;">
+            <h2>Quadro de Cargas</h2>
+            <table id="tabelaCargas">
+                <thead>
+                    <tr>
+                        <th>Cômodo</th>
+                        <th>Área/Perim.</th>
+                        <th>Iluminação</th>
+                        <th>TUGs (Qtd/Pot)</th>
+                        <th>TUE (W)</th>
+                        <th>Pot. Total (W)</th>
+                        <th>Fio Min. / Disj. Sugerido (Circuito Único)*</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela">
+                    </tbody>
+            </table>
+
+            <h2>Resumo Geral da Instalação</h2>
+            <div class="summary-box">
+                <div class="summary-item">
+                    Potência Ativa Total (W)
+                    <strong id="totalW">0</strong>
+                </div>
+                <div class="summary-item">
+                    Potência Aparente Total (VA)
+                    <strong id="totalVA">0</strong>
+                </div>
+                <div class="summary-item">
+                    Divisão de Circuitos Recomendada
+                    <strong id="sugestaoCircuitos">0</strong>
+                </div>
+            </div>
+            <p style="font-size: 0.8em; color: #666; margin-top: 15px;">
+                * O fio e disjuntor na tabela mostram um equivalente aproximado se o cômodo fosse um circuito misto isolado. A NBR 5410 recomenda separar circuitos de iluminação e tomadas, além de circuitos individuais para TUEs. Eletrodutos recomendados para circuitos terminais padrão residenciais: 3/4" (25mm) ou 1" (32mm) para agrupamentos.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let totalGlobalW = 0;
+        let totalGlobalVA = 0;
+        let totalTUEs = 0;
+
+        function calcularIluminacao(area) {
+            if (area === 0) return 0;
+            if (area <= 6) return 100;
+            let excedente = area - 6;
+            let fracoes = Math.floor(excedente / 4);
+            return 100 + (fracoes * 60);
+        }
+
+        function calcularTUGs(perimetro, tipo) {
+            let qtd = 0;
+            let va = 0;
+            
+            if (tipo === 'umido') {
+                qtd = Math.ceil(perimetro / 3.5);
+                let limite = Math.min(qtd, 3);
+                let resto = Math.max(0, qtd - 3);
+                va = (limite * 600) + (resto * 100);
+            } else if (tipo === 'banheiro') {
+                qtd = 1; // Mínimo 1 perto do lavatório
+                va = 600;
+            } else { // seco
+                qtd = Math.ceil(perimetro / 5);
+                va = qtd * 100;
+            }
+            return { qtd: qtd, va: va };
+        }
+
+        // Tabela simplificada: Corrente -> Seção (mm²) Método B1 / Disjuntor Comercial (A)
+        function dimensionarFioEDisjuntor(corrente) {
+            if (corrente <= 10) return { fio: "1.5 mm²", disj: "10 A" };
+            if (corrente <= 15.5) return { fio: "1.5 mm² (Ilum) / 2.5 mm² (Força)", disj: "16 A" };
+            if (corrente <= 21) return { fio: "2.5 mm²", disj: "20 A" };
+            if (corrente <= 28) return { fio: "4.0 mm²", disj: "25 A" };
+            if (corrente <= 36) return { fio: "6.0 mm²", disj: "32 A" };
+            if (corrente <= 50) return { fio: "10.0 mm²", disj: "40 ou 50 A" };
+            if (corrente <= 68) return { fio: "16.0 mm²", disj: "63 A" };
+            return { fio: "Projeto Específico", disj: "> 63 A" };
+        }
+
+        function adicionarComodo() {
+            // Coletar dados
+            const nome = document.getElementById('nomeComodo').value || "Cômodo S/N";
+            const tipo = document.getElementById('tipoComodo').value;
+            const largura = parseFloat(document.getElementById('largura').value) || 0;
+            const comp = parseFloat(document.getElementById('comprimento').value) || 0;
+            const tensao = parseFloat(document.getElementById('tensao').value);
+            
+            const nomeTue = document.getElementById('nomeTue').value;
+            const potTue = parseFloat(document.getElementById('potenciaTue').value) || 0;
+
+            if (largura <= 0 || comp <= 0) {
+                alert("Por favor, insira largura e comprimento válidos.");
+                return;
+            }
+
+            // Cálculos NBR 5410
+            const area = largura * comp;
+            const perimetro = 2 * (largura + comp);
+            
+            const ilumVA = calcularIluminacao(area);
+            const ilumW = ilumVA * 1.0; // FP 1.0
+
+            const tugs = calcularTUGs(perimetro, tipo);
+            const tugW = tugs.va * 0.8; // FP 0.8 para TUGs
+
+            const tueVA = potTue; // Assumindo FP 1.0 resistivo para simplificar
+            const tueW = potTue;
+            if (tueW > 0) totalTUEs++;
+
+            const totalVA = ilumVA + tugs.va + tueVA;
+            const totalW = ilumW + tugW + tueW;
+            const corrente = totalVA / tensao;
+
+            const dim = dimensionarFioEDisjuntor(corrente);
+
+            // Adicionar à tabela
+            const tbody = document.getElementById('corpoTabela');
+            const row = tbody.insertRow();
+            
+            row.innerHTML = `
+                <td><strong>${nome}</strong><br>(${tipo})</td>
+                <td>A: ${area.toFixed(2)}m²<br>P: ${perimetro.toFixed(2)}m</td>
+                <td>${ilumVA} VA</td>
+                <td>${tugs.qtd} un<br>(${tugs.va} VA)</td>
+                <td>${nomeTue ? nomeTue + '<br>(' + tueW + ' W)' : '-'}</td>
+                <td>${totalW.toFixed(0)} W<br><span style="font-size:0.8em;color:gray;">${totalVA.toFixed(0)} VA / ${corrente.toFixed(1)}A</span></td>
+                <td>Fio: ${dim.fio}<br>Disj: ${dim.disj}</td>
+            `;
+
+            // Atualizar Totais
+            totalGlobalW += totalW;
+            totalGlobalVA += totalVA;
+            
+            document.getElementById('totalW').innerText = totalGlobalW.toFixed(0) + " W";
+            document.getElementById('totalVA').innerText = totalGlobalVA.toFixed(0) + " VA";
+
+            // Lógica simples de sugestão de circuitos
+            // NBR 5410 pede: Iluminação separada, TUGs separadas, TUGs de cozinha/área separadas, TUEs independentes.
+            let circuitosSugeridos = 2 + totalTUEs; // Pelo menos 1 Ilum, 1 TUG padrão + as TUEs
+            document.getElementById('sugestaoCircuitos').innerText = `Mínimo de ${circuitosSugeridos} circuitos`;
+
+            // Limpar formulário (opcional)
+            document.getElementById('nomeComodo').value = '';
+            document.getElementById('nomeTue').value = '';
+            document.getElementById('potenciaTue').value = '';
+        }
+    </script>
+</body>
+</html>
